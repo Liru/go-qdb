@@ -141,7 +141,29 @@ func LatestHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 }
 
 func TopHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	Incomplete(w)
+	now := time.Now()
+	fmt.Println("Handling top.")
+
+	p := QuotePage{
+		Page: NewPage("Top"),
+	}
+
+	myFuncMap := template.FuncMap{
+		"nl2br": nl2br,
+	}
+
+	t, err := template.New("base.tmpl").Funcs(myFuncMap).ParseFiles("tmpl/base.tmpl", "tmpl/quotes.tmpl")
+	checkErr(err)
+
+	SQLBeginning := time.Now()
+	p.Quotes = Top()
+	p.TimeInSQL = time.Since(SQLBeginning)
+
+	ttr := time.Since(now) - p.TimeInSQL
+	p.TimeToRender = ttr
+	err = t.Execute(w, p)
+	checkErr(err)
+	fmt.Println("Took", time.Since(now), "to run.")
 }
 
 func SubmissionHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

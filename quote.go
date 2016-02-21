@@ -85,10 +85,31 @@ func Browse(page int) []Quote {
 
 	return q
 }
+
 func Latest() []Quote {
 	q := make([]Quote, 0)
 
 	rows, err := db.Query("SELECT id,body,notes,rating FROM quotes ORDER BY id DESC LIMIT 20")
+	checkErr(err)
+
+	for rows.Next() {
+		var body, notes string
+		var id, rating uint
+		err = rows.Scan(&id, &body, &notes, &rating)
+		checkErr(err)
+		fmt.Println(body)
+		fmt.Println(notes)
+		newQuote := Quote{ID: id, Text: body, Notes: notes, Rating: rating}
+		fmt.Println(newQuote)
+		q = append(q, newQuote)
+	}
+	return q
+}
+
+func Top() []Quote {
+	q := make([]Quote, 0)
+
+	rows, err := db.Query("SELECT id,body,notes,rating FROM quotes ORDER BY rating DESC LIMIT 20")
 	checkErr(err)
 
 	for rows.Next() {
