@@ -1,0 +1,26 @@
+.qt {
+    font-family: courier new, lucida console, fixed;
+    font-size: 10pt;
+    margin-top: 0px;
+}
+td.logotitle {
+    white-space: nowrap;
+    font-family: helvetica, arial, sans-serif;
+    font-size: large;
+    font-weight: bold;
+    border-bottom: 1px solid #000000;
+}
+body {
+    margin: 0;
+    background-color: #ffffff;
+    color: #000000;
+    font-family: helvetica, arial, sans-serif;
+    font-size: small;
+}
+.m {
+    font-size: 10pt;
+    font-family: helvetica, arial, sans-serif;
+}
+a {
+	color: #c08000;
+}

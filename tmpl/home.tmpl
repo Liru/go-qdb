@@ -1,0 +1,33 @@
+{{define "body"}}
+<body>
+<h1><a href="./" title="Start Page">{{.Cfg.QDBName}}</a></h1>
+<div id="content-container"><div id="content">
+
+	<div id="welcome-message-container">
+		<div id="welcome-message">
+			{{.WelcomeMessage | html}}
+		</div>
+	</div>
+	<div id="news-display-container">
+		<div id="news-display">
+			<h2>
+				Latest News
+			</h2>
+			<ul id="news-list">
+				{{range .NewsItems}}
+				<li>
+					<div class="news-text">{{.NewsText | html}}</div>
+					<p class="news-footer">&mdash;{{.Author | html}},
+					{{.TimePosted}}</p>
+				</li>
+				{{end}}
+			</ul>
+
+		</div>
+	</div>
+	<div id="start-page-end"></div>
+	<div id="credits">
+		
+	</div>
+</div></div>
+{{end}}

@@ -1,0 +1,55 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>	
+	<title>{{.Cfg.QDBName}}: {{.PageName}}</title>
+	<!-- <link rel="stylesheet" title="Mash" type="text/css" href="mash.css" /> -->
+	<style type="text/css">
+
+	</style>
+
+	<link rel="stylesheet" type="text/css" href="{{.Cfg.SiteRoot}}/css/style.css">
+
+</head>
+<body>
+<!-- 
+{{.}} -->
+
+<table border="0" cellpadding="4" cellspacing="0" width="100%">
+
+<tr bgcolor="#c08000">
+<td align="left" class="logotitle">
+<span style="float:left">{{.Cfg.QDBName}}: {{.PageName}}</span>
+</td></tr>
+
+<tr>
+{{template "navbar" .}}
+</table>
+
+{{template "body" .}}
+
+<center>
+<!-- <table id="credits" border="0" cellpadding="2" cellspacing="0" width="80%" bgcolor="#c08000"><tr>
+<td class="footertext" align="left">SQL: {{.TimeInSQL}} | Render: {{.TimeToRender}}</td><td class="footertext" align="right"> 20983 quotes approved; 390 quotes pending</td>
+</tr>
+</table> -->
+
+<table border="0" cellpadding="4" cellspacing="0" width="100%">
+{{template "navbar" .}}
+<tr bgcolor="#c08000" class="m">
+<td>
+<span style="float:left"><small>SQL: {{.TimeInSQL}} | Render: {{.TimeToRender}}</small></span>
+<span style="float:right">
+14,375 quotes approved; 9,816 <a href="/queue" class="footer">fermenting</a>; karma: 191.4698</span></td>
+</tr></table>
+
+
+<br>
+&#169; {{.Cfg.QDBName}} 2016-2016, All Rights Reserved.
+</font>
+</center>
+
+</body>
+</html>
+
+{{define "navbar"}}
+<tr><td class="m" ><span style="float:right"><a href="/">About</a> / <a href="/browse">Browse</a> / <a href="/latest">Latest</a> / <a href="/random">Random</a> / <a href="/queue">Queue</a> / <a href="/prefs">Prefs</a> / <a href="/submit"><b>Submit</b></a> / <a href="/search">Search</a></span></td></tr>
+{{end}}

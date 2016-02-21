@@ -1,0 +1,15 @@
+{{define "body"}}
+	{{range .Quotes}}
+<!-- <p class="quote"><a href="?954321" title="Permanent link to this quote."><b>#954321</b></a> <a href="./?le=304cd6137d51a6e3c5b5cbdfda71252c&amp;rox=954321" class="qa">+</a>(<font color="green">259</font>)<a href="./?le=304cd6137d51a6e3c5b5cbdfda71252c&amp;sox=954321" class="qa">-</a> <a href="./?le=304cd6137d51a6e3c5b5cbdfda71252c&amp;sux=954321" onClick="return confirm('Flag quote for review?');" class="qa">[X]</a></p><p class="qt"> -->
+<p class="quote"><a href="./q/{{.ID}}" title="Permanent link to this quote."><b>#{{.ID}}</b></a> <a href="." class="qa">+</a>(<font color="green">{{.Rating}}</font>)<a href="." class="qa">-</a> <a href="." class="qa">[X]</a></p>
+<p class="qt">
+{{.Text  | nl2br}}
+</p>
+		{{if .Notes}}
+<div class="quote-notes">
+					<p><em class="quote-notes-title">Notes:</em>
+					{{.Notes}}</p>
+				</div>
+		{{end}}
+	{{end}}
+{{end}}
