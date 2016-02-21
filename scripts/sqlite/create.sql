@@ -1,0 +1,42 @@
+CREATE TABLE `quotes` (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	body TEXT NOT NULL,
+	notes TEXT,
+	rating INTEGER NOT NULL default 0,
+	votes INTEGER NOT NULL default 0,
+	submitted DATETIME default CURRENT_TIMESTAMP,
+	approved INTEGER(1) NOT NULL default 0,
+	flagged BOOLEAN NOT NULL default 0,
+	score INTEGER NOT NULL default 1
+);
+
+CREATE TABLE `accounts` (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	username CHAR(32) UNIQUE NOT NULL,
+	password CHAR(32) NOT NULL,
+	level BOOLEAN NOT NULL default 0
+);
+
+CREATE TABLE `news` (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	body TEXT NOT NULL,
+	poster  INTEGER default NULL,
+	date DATETIME NOT NULL default CURRENT_TIMESTAMP,
+	FOREIGN KEY(poster) REFERENCES accounts(id)
+);
+
+CREATE TABLE `tags` (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	tag CHAR(255) NOT NULL
+);
+
+CREATE TABLE `quote_tag` (
+	quote_id INTEGER NOT NULL,
+	tag_id INTEGER NOT NULL
+);
+
+CREATE TABLE `sessions` (
+	id CHAR(32) UNIQUE NOT NULL,
+	expires DATETIME NOT NULL,
+	data TEXT NOT NULL
+);
