@@ -79,7 +79,7 @@ func QuoteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	quoteID := ps.ByName("quote")
 
 	p := QuotePage{
-		Page: NewPage(quoteID),
+		Page: NewPage("Quote #" + quoteID),
 	}
 
 	myFuncMap := template.FuncMap{
@@ -103,7 +103,31 @@ func QuoteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 }
 
 func SearchHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	Incomplete(w)
+	now := time.Now()
+	fmt.Println("Handling search.")
+
+	p := QuotePage{
+		Page: NewPage("Search"),
+	}
+
+	myFuncMap := template.FuncMap{
+		"nl2br": nl2br,
+	}
+
+	t, err := template.New("base.tmpl").Funcs(myFuncMap).ParseFiles("tmpl/base.tmpl", "tmpl/search.tmpl")
+	checkErr(err)
+
+	if r.URL.RawQuery != "" {
+		SQLBeginning := time.Now()
+		p.Quotes = Search(r.URL.Query().Get("q"))
+		p.TimeInSQL = time.Since(SQLBeginning)
+	}
+
+	ttr := time.Since(now) - p.TimeInSQL
+	p.TimeToRender = ttr
+	err = t.Execute(w, p)
+	checkErr(err)
+	fmt.Println("Took", time.Since(now), "to run.")
 }
 
 func FlagHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -251,7 +275,7 @@ func main() {
 	router := httprouter.New()
 	router.GET("/", HomeHandler)
 	router.GET("/q/:quote", QuoteHandler)
-	router.GET("/search/:query", SearchHandler)
+	router.GET("/search", SearchHandler)
 	router.GET("/q/:quote/flag", FlagHandler)
 	router.GET("/q/:quote/delete", DeleteHandler)
 	router.GET("/latest", LatestHandler)
