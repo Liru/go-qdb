@@ -43,89 +43,24 @@ func AddQuote(v url.Values) (int64, error) {
 }
 
 func GetQuote(sid string) []Quote {
-
-	q := make([]Quote, 0)
-
-	rows, err := db.Query("SELECT id,body,notes,rating FROM quotes WHERE id = ?", sid)
-	checkErr(err)
-
-	for rows.Next() {
-		var body, notes string
-		var id, rating uint
-		err = rows.Scan(&id, &body, &notes, &rating)
-		checkErr(err)
-		newQuote := Quote{ID: id, Text: body, Notes: notes, Rating: rating}
-		q = append(q, newQuote)
-	}
-
-	return q
+	return getQuotesFromDatabase("SELECT id,body,notes,rating FROM quotes WHERE id = ?", sid)
 }
 
 func Browse(page int) []Quote {
-	q := make([]Quote, 0)
-
-	rows, err := db.Query("SELECT id,body,notes,rating FROM quotes ORDER BY id ASC LIMIT 20 OFFSET ?", page*20)
-	checkErr(err)
-
-	fmt.Println("iterating")
-
-	for rows.Next() {
-		var body, notes string
-		var id, rating uint
-		err = rows.Scan(&id, &body, &notes, &rating)
-		checkErr(err)
-
-		newQuote := Quote{ID: id, Text: body, Notes: notes, Rating: rating}
-		q = append(q, newQuote)
-	}
-	fmt.Println("returning browse")
-
-	return q
+	return getQuotesFromDatabase("SELECT id,body,notes,rating FROM quotes ORDER BY id ASC LIMIT 20 OFFSET ?", page*20)
 }
 
 func Latest() []Quote {
-	q := make([]Quote, 0)
-
-	rows, err := db.Query("SELECT id,body,notes,rating FROM quotes ORDER BY id DESC LIMIT 20")
-	checkErr(err)
-
-	for rows.Next() {
-		var body, notes string
-		var id, rating uint
-		err = rows.Scan(&id, &body, &notes, &rating)
-		checkErr(err)
-
-		newQuote := Quote{ID: id, Text: body, Notes: notes, Rating: rating}
-		q = append(q, newQuote)
-	}
-	return q
+	return getQuotesFromDatabase("SELECT id,body,notes,rating FROM quotes ORDER BY id DESC LIMIT 20")
 }
 
 func Top() []Quote {
-	q := make([]Quote, 0)
-
-	rows, err := db.Query("SELECT id,body,notes,rating FROM quotes ORDER BY rating DESC LIMIT 20")
-	checkErr(err)
-
-	for rows.Next() {
-		var body, notes string
-		var id, rating uint
-		err = rows.Scan(&id, &body, &notes, &rating)
-		checkErr(err)
-
-		newQuote := Quote{ID: id, Text: body, Notes: notes, Rating: rating}
-		q = append(q, newQuote)
-	}
-	return q
+	return getQuotesFromDatabase("SELECT id,body,notes,rating FROM quotes ORDER BY rating DESC LIMIT 20")
 }
 
 func Search(searchText string) []Quote {
-	q := make([]Quote, 0)
-
 	query := "SELECT id,body,notes,rating FROM quotes WHERE 1=1"
-
 	terms := strings.Split(searchText, " ")
-
 	for i := 0; i < len(terms); i++ {
 		// This took WAY too long for what it was.
 		// Note to future self: Go doesn't like '%?%'. It takes it literally and
@@ -141,8 +76,17 @@ func Search(searchText string) []Quote {
 		args[i] = terms[i]
 	}
 
-	rows, err := db.Query(query, args...)
+	return getQuotesFromDatabase(query, args...)
+}
 
+func (q *Quote) String() string {
+	return fmt.Sprint("%d: %s", q.ID, q.Text)
+}
+
+func getQuotesFromDatabase(statement string, args ...interface{}) []Quote {
+	var q []Quote
+
+	rows, err := db.Query(statement, args...)
 	checkErr(err)
 
 	for rows.Next() {
@@ -150,14 +94,14 @@ func Search(searchText string) []Quote {
 		var id, rating uint
 		err = rows.Scan(&id, &body, &notes, &rating)
 		checkErr(err)
-
-		newQuote := Quote{ID: id, Text: body, Notes: notes, Rating: rating}
+		newQuote := Quote{
+			ID:     id,
+			Text:   body,
+			Notes:  notes,
+			Rating: rating,
+		}
 		q = append(q, newQuote)
 	}
+
 	return q
-
-}
-
-func (q *Quote) String() string {
-	return fmt.Sprint("%d: %s", q.ID, q.Text)
 }
