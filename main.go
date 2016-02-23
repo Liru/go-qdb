@@ -21,8 +21,11 @@ type Config struct {
 }
 
 var (
-	config Config
-	db     *sql.DB
+	config      Config
+	db          *sql.DB
+	tmplFuncMap = template.FuncMap{
+		"nl2br": nl2br,
+	}
 )
 
 func init() {
@@ -82,11 +85,7 @@ func QuoteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		Page: NewPage("Quote #" + quoteID),
 	}
 
-	myFuncMap := template.FuncMap{
-		"nl2br": nl2br,
-	}
-
-	t, err := template.New("base.tmpl").Funcs(myFuncMap).ParseFiles("tmpl/base.tmpl", "tmpl/quotes.tmpl")
+	t, err := template.New("base.tmpl").Funcs(tmplFuncMap).ParseFiles("tmpl/base.tmpl", "tmpl/quotes.tmpl")
 	if err != nil {
 		panic(err)
 	}
@@ -110,11 +109,7 @@ func SearchHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 		Page: NewPage("Search"),
 	}
 
-	myFuncMap := template.FuncMap{
-		"nl2br": nl2br,
-	}
-
-	t, err := template.New("base.tmpl").Funcs(myFuncMap).ParseFiles("tmpl/base.tmpl", "tmpl/search.tmpl")
+	t, err := template.New("base.tmpl").Funcs(tmplFuncMap).ParseFiles("tmpl/base.tmpl", "tmpl/search.tmpl")
 	checkErr(err)
 
 	if r.URL.RawQuery != "" {
@@ -146,11 +141,7 @@ func LatestHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 		Page: NewPage("Latest"),
 	}
 
-	myFuncMap := template.FuncMap{
-		"nl2br": nl2br,
-	}
-
-	t, err := template.New("base.tmpl").Funcs(myFuncMap).ParseFiles("tmpl/base.tmpl", "tmpl/quotes.tmpl")
+	t, err := template.New("base.tmpl").Funcs(tmplFuncMap).ParseFiles("tmpl/base.tmpl", "tmpl/quotes.tmpl")
 	checkErr(err)
 
 	SQLBeginning := time.Now()
@@ -172,11 +163,7 @@ func TopHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		Page: NewPage("Top"),
 	}
 
-	myFuncMap := template.FuncMap{
-		"nl2br": nl2br,
-	}
-
-	t, err := template.New("base.tmpl").Funcs(myFuncMap).ParseFiles("tmpl/base.tmpl", "tmpl/quotes.tmpl")
+	t, err := template.New("base.tmpl").Funcs(tmplFuncMap).ParseFiles("tmpl/base.tmpl", "tmpl/quotes.tmpl")
 	checkErr(err)
 
 	SQLBeginning := time.Now()
@@ -231,11 +218,7 @@ func BrowseHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 		Page: NewPage("Browse"),
 	}
 
-	myFuncMap := template.FuncMap{
-		"nl2br": nl2br,
-	}
-
-	t, err := template.New("base.tmpl").Funcs(myFuncMap).ParseFiles("tmpl/base.tmpl", "tmpl/quotes.tmpl")
+	t, err := template.New("base.tmpl").Funcs(tmplFuncMap).ParseFiles("tmpl/base.tmpl", "tmpl/quotes.tmpl")
 	checkErr(err)
 
 	var id int
