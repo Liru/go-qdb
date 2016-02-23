@@ -7,12 +7,15 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/julienschmidt/httprouter"
 	_ "github.com/mattn/go-sqlite3"
 )
+
+type QuoteHandle func(http.ResponseWriter, *http.Request, httprouter.Params, *QuotePage)
 
 type Config struct {
 	QDBName   string
@@ -42,8 +45,6 @@ func init() {
 
 func HomeHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	now := time.Now()
-	fmt.Println("Handling homepage.")
-
 	p := Page{
 		Cfg:            config,
 		PageName:       "Home",
@@ -71,58 +72,39 @@ func HomeHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	p.TimeToRender = ttr
 	err = t.Execute(w, p)
 	checkErr(err)
-
-	fmt.Println("Took", time.Since(now), "to run.")
-
 }
 
-func QuoteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	now := time.Now()
-	fmt.Println("Handling single quote.")
+func QuoteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params, p *QuotePage) {
 	quoteID := ps.ByName("quote")
+	p.Page = NewPage("Quote #" + quoteID)
 
-	p := QuotePage{
-		Page: NewPage("Quote #" + quoteID),
-	}
-
-	t, err := template.New("base.tmpl").Funcs(tmplFuncMap).ParseFiles("tmpl/base.tmpl", "tmpl/quotes.tmpl")
-	if err != nil {
-		panic(err)
-	}
-
-	SQLBeginning := time.Now()
-	p.Quotes = GetQuote(quoteID)
-	p.TimeInSQL = time.Since(SQLBeginning)
-
-	ttr := time.Since(now) - p.TimeInSQL
-	p.TimeToRender = ttr
-	err = t.Execute(w, p)
-	checkErr(err)
-	fmt.Println("Took", time.Since(now), "to run.")
+	p.getQuotesFromDatabase("SELECT id,body,notes,rating FROM quotes WHERE id = ?", quoteID)
 }
 
-func SearchHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	now := time.Now()
-	fmt.Println("Handling search.")
-
-	p := QuotePage{
-		Page: NewPage("Search"),
-	}
-
-	t, err := template.New("base.tmpl").Funcs(tmplFuncMap).ParseFiles("tmpl/base.tmpl", "tmpl/search.tmpl")
-	checkErr(err)
+func SearchHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params, p *QuotePage) {
 
 	if r.URL.RawQuery != "" {
-		SQLBeginning := time.Now()
-		p.Quotes = Search(r.URL.Query().Get("q"))
-		p.TimeInSQL = time.Since(SQLBeginning)
-	}
 
-	ttr := time.Since(now) - p.TimeInSQL
-	p.TimeToRender = ttr
-	err = t.Execute(w, p)
-	checkErr(err)
-	fmt.Println("Took", time.Since(now), "to run.")
+		terms := strings.Split(r.URL.Query().Get("q"), " ")
+		query := "SELECT id,body,notes,rating FROM quotes WHERE 1=1"
+
+		for i := 0; i < len(terms); i++ {
+			// This took WAY too long for what it was.
+			// Note to future self: Go doesn't like '%?%'. It takes it literally and
+			// ignores the question mark as a binding parameter.
+			query += " AND body LIKE '%' || ? || '%'"
+		}
+		query += " ORDER BY id DESC"
+
+		// We have to cast `terms` to []interface{} because Go sucks
+		args := make([]interface{}, len(terms))
+
+		for i := range terms {
+			args[i] = terms[i]
+		}
+		p.getQuotesFromDatabase(query, args...)
+
+	}
 }
 
 func FlagHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -133,54 +115,20 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 	Incomplete(w)
 }
 
-func LatestHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	now := time.Now()
-	fmt.Println("Handling latest.")
+func LatestHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params, p *QuotePage) {
+	p.Page = NewPage("Latest Quotes")
 
-	p := QuotePage{
-		Page: NewPage("Latest"),
-	}
-
-	t, err := template.New("base.tmpl").Funcs(tmplFuncMap).ParseFiles("tmpl/base.tmpl", "tmpl/quotes.tmpl")
-	checkErr(err)
-
-	SQLBeginning := time.Now()
-	p.Quotes = Latest()
-	p.TimeInSQL = time.Since(SQLBeginning)
-
-	ttr := time.Since(now) - p.TimeInSQL
-	p.TimeToRender = ttr
-	err = t.Execute(w, p)
-	checkErr(err)
-	fmt.Println("Took", time.Since(now), "to run.")
+	p.getQuotesFromDatabase("SELECT id,body,notes,rating FROM quotes ORDER BY id DESC LIMIT 20")
 }
 
-func TopHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	now := time.Now()
-	fmt.Println("Handling top.")
+func TopHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params, p *QuotePage) {
+	p.Page = NewPage("Top Quotes")
 
-	p := QuotePage{
-		Page: NewPage("Top"),
-	}
-
-	t, err := template.New("base.tmpl").Funcs(tmplFuncMap).ParseFiles("tmpl/base.tmpl", "tmpl/quotes.tmpl")
-	checkErr(err)
-
-	SQLBeginning := time.Now()
-	p.Quotes = Top()
-	p.TimeInSQL = time.Since(SQLBeginning)
-
-	ttr := time.Since(now) - p.TimeInSQL
-	p.TimeToRender = ttr
-	err = t.Execute(w, p)
-	checkErr(err)
-	fmt.Println("Took", time.Since(now), "to run.")
+	p.getQuotesFromDatabase("SELECT id,body,notes,rating FROM quotes ORDER BY rating DESC LIMIT 20")
 }
 
 func SubmissionHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	now := time.Now()
-	fmt.Println("Handling submission.")
-
 	p := SubmitPage{
 		Page: NewPage("Submit"),
 	}
@@ -207,42 +155,26 @@ func SubmissionHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 	p.TimeToRender = time.Since(now) - p.TimeInSQL
 	err = t.Execute(w, p)
 	checkErr(err)
-	fmt.Println("Took", time.Since(now), "to run.")
 }
 
-func BrowseHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	now := time.Now()
-	fmt.Println("Handling browse.")
-
-	p := QuotePage{
-		Page: NewPage("Browse"),
-	}
-
-	t, err := template.New("base.tmpl").Funcs(tmplFuncMap).ParseFiles("tmpl/base.tmpl", "tmpl/quotes.tmpl")
-	checkErr(err)
-
-	var id int
+func BrowseHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params, p *QuotePage) {
+	p.Page = NewPage("Browse Quotes")
 
 	sid := r.URL.Query().Get("p")
-
-	if sid == "" {
-		id = 1
-	} else {
-		id2, err := strconv.Atoi(sid)
+	page := 0
+	if sid != "" {
+		id, err := strconv.Atoi(sid)
 		checkErr(err)
-		id = id2
+		if id >= 0 {
+			page = id
+		}
 	}
 
-	SQLBeginning := time.Now()
-	p.Quotes = Browse(id - 1)
-	p.TimeInSQL = time.Since(SQLBeginning)
+	p.getQuotesFromDatabase("SELECT id,body,notes,rating FROM quotes ORDER BY id ASC LIMIT 20 OFFSET ?", page*20)
 
-	ttr := time.Since(now) - p.TimeInSQL
-	p.TimeToRender = ttr
-	err = t.Execute(w, p)
-	checkErr(err)
-	fmt.Println("Took", time.Since(now), "to run.")
 }
+
+/////////////////////////////////////
 
 func Incomplete(w http.ResponseWriter) {
 	p := NewPage("INCOMPLETE")
@@ -254,16 +186,45 @@ func Incomplete(w http.ResponseWriter) {
 
 }
 
+var _ = DebugTime
+
+func DebugTime(fn httprouter.Handle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		now := time.Now()
+		fn(w, r, ps)
+		fmt.Println("Took", time.Since(now), "to run.")
+	}
+}
+
+func QuoteWrapper(handle QuoteHandle) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		now := time.Now()
+
+		p := &QuotePage{}
+
+		t, err := template.New("base.tmpl").Funcs(tmplFuncMap).ParseFiles("tmpl/base.tmpl", "tmpl/quotes.tmpl")
+		checkErr(err)
+
+		handle(w, r, ps, p)
+
+		ttr := time.Since(now) - p.TimeInSQL
+		p.TimeToRender = ttr
+		err = t.Execute(w, p)
+		checkErr(err)
+
+	}
+}
+
 func main() {
 	router := httprouter.New()
 	router.GET("/", HomeHandler)
-	router.GET("/q/:quote", QuoteHandler)
-	router.GET("/search", SearchHandler)
+	router.GET("/q/:quote", QuoteWrapper(QuoteHandler))
+	router.GET("/search", QuoteWrapper(SearchHandler))
 	router.GET("/q/:quote/flag", FlagHandler)
 	router.GET("/q/:quote/delete", DeleteHandler)
-	router.GET("/latest", LatestHandler)
-	router.GET("/top", TopHandler)
-	router.GET("/browse", BrowseHandler)
+	router.GET("/latest", QuoteWrapper(LatestHandler))
+	router.GET("/top", QuoteWrapper(TopHandler))
+	router.GET("/browse", QuoteWrapper(BrowseHandler))
 
 	router.GET("/submit", SubmissionHandler)
 	router.POST("/submit", SubmissionHandler)
